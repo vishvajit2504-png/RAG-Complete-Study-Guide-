@@ -1,6 +1,12 @@
 # RAG-Complete-Study-Guide-
 This part of code will cover all the basics topics 
 
+1) Embeddings 
+2) chunking
+3) Indexing
+3) Storing the index
+4) Retriveing index
+
 # check_ollama_running
 This Functions checks if ollama is running if not this runs ollama by running the command ollama list.
 You must ollama pull the llama3.2:1b model and nomic-embed-text in your local to run this without any issues
@@ -20,4 +26,5 @@ chunk_document into the right size of 500 and overlap
 
 # build_index
 build index for each chunk and put it inside the get_embeddings functions and add it inot the index
+
 

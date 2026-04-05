@@ -97,7 +97,7 @@ def chat_with_ollama(system_prompt: str,
                 {"role": "system", "content": system_prompt},
                 {"role": "user",   "content": user_prompt}
             ],
-            "stream": True,
+            "stream": False,
             "options": {
                 "temperature": 0.1,     # factual, low creativity
                 "num_predict": 512,     # max tokens to generate
@@ -106,6 +106,7 @@ def chat_with_ollama(system_prompt: str,
         timeout=120     # local models can be slow
     )
     response.raise_for_status()
+    print(response)
     return response.json()["message"]["content"]
 
 def load_pdf(pdf_path: str) -> str:
@@ -240,6 +241,8 @@ def generate_answer(query: str, retrieved: list[dict]) -> str:
             f"{chunk['text']}"
         )
     context = "\n\n---\n\n".join(context_parts)
+
+    print(f"Constructed context for answer generation:\n{context[:500]}...")  # Show start of context
     
     system_prompt = """You are a precise research assistant. 
     Answer questions using ONLY the provided context.
@@ -281,7 +284,7 @@ def main():
 
     # Show corpus stats
     sources = set(c["source"] for c in chunks)
-    print(f"\n📚 Corpus: {len(sources)} documents, {len(chunks)} chunks")
+    print(f"\n Corpus: {len(sources)} documents, {len(chunks)} chunks")
     for src in sorted(sources):
         count = sum(1 for c in chunks if c["source"] == src)
         print(f"   {src}: {count} chunks")
@@ -306,7 +309,7 @@ def main():
                 continue
             
             print("\n Retrieving...")
-            retrieved = retrieve(query, index, chunks)
+            retrieved = retrieve_chunks(query, index, chunks)
             
             print(f"\n Top {len(retrieved)} chunks retrieved:")
             for r in retrieved:
