@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     # --- Ollama ---
     ollama_base_url: str = "http://localhost:11434"
     ollama_embedding_model: str = "nomic-embed-text"   # best local embedding model
-    ollama_chat_model: str = "llama3.2"                # or mistral, phi3, gemma2
+    ollama_chat_model: str = "llama3.2:1b"                # or mistral, phi3, gemma2
 
     # --- ChromaDB ---
     chroma_persist_dir: str = "./chroma_db"

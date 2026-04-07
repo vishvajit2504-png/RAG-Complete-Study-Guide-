@@ -48,3 +48,27 @@ This strategy improves semantic chunking and retrieval accuracy while making deb
 ---
 
 For implementation details, see `document_loader.py` and `text_splitter.py` in this folder.
+
+---
+
+## Embedder (`embedder.py`)
+
+Provides embedding and vector-store integration for indexing and retrieval.
+
+- Key functions:
+    - `get_embeddings()` — returns an `OllamaEmbeddings` instance using settings from `config`.
+    - `get_vector_store(embeddings)` — returns a `Chroma` collection configured with the embedding function and persistence directory.
+    - `embed_and_store(chunks)` — embeds a list of `Document` chunks and persists them to Chroma; skips re-embedding if vectors already exist.
+    - `similarity_search(query, vector_store, top_k)` — retrieves the top-k most similar documents for a query.
+
+- Behavior and notes:
+    - Uses settings from `config.py` (e.g. `ollama_base_url`, `ollama_embedding_model`, `chroma_collection_name`, `chroma_persist_dir`, `retrieval_top_k`).
+    - When run as a script (`__main__`), it loads documents from the `papers` folder, splits them, embeds them, and runs a small retrieval test.
+
+- Run example (from repo root):
+
+```powershell
+python "RAG CODE 2\embedder.py"
+```
+
+See `embedder.py` for implementation details and for adjusting settings in `config.py`.
