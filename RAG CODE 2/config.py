@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # --- Retrieval ---
     retrieval_top_k: int = 5
-    similarity_threshold: float = 0.75
+    similarity_threshold: float = 0.60
 
     # --- FastAPI ---
     api_host: str = "0.0.0.0"

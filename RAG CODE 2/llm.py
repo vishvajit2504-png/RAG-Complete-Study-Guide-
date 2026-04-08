@@ -15,10 +15,10 @@ def get_llm() -> ChatOllama:
     llm = ChatOllama(
         base_url=settings.ollama_base_url,
         model=settings.ollama_chat_model,     # llama3.2
-        temperature=0.0,                       # deterministic — important for RAG
-        num_ctx=4096,                          # context window size
+        temperature=0.2,                       # deterministic — important for RAG
+        num_ctx=7000,                          # context window size
     )
-    logger.info(f"LLM ready — model='{settings.ollama_chat_model}', temp=0.0")
+    logger.info(f"LLM ready — model='{settings.ollama_chat_model}', temp=0.2")
     return llm
 
 
@@ -31,8 +31,7 @@ def get_rag_prompt() -> ChatPromptTemplate:
 based on the provided context. 
 
 Rules:
-- Answer ONLY from the context below. 
-- If the answer is not in the context, say: "I don't have enough information to answer that."
+- Go through the context and find relevant information to answer the question.
 - Be concise and precise.
 - Always mention which document your answer comes from.
 

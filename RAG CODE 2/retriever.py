@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def get_base_retriever(vectorstore: Chroma = None):
 
     if vectorstore is None:
-        vectorstore = get_vectorstore()
+        vectorstore = get_vector_store(get_embeddings())
 
     retriever = vectorstore.as_retriever(
         search_type="similarity",
@@ -29,7 +29,7 @@ def get_base_retriever(vectorstore: Chroma = None):
 def get_mmr_retriever(vectorstore: Chroma = None):
 
     if vectorstore is None:
-        vectorstore = get_vectorstore()
+        vectorstore = get_vector_store(get_embeddings())
 
     retriver = vectorstore.as_retriever(
         search_type = "mmr",
@@ -45,7 +45,7 @@ def get_mmr_retriever(vectorstore: Chroma = None):
 def retrieve_with_scores(query:str, vectorstore:Chroma= None) -> List[tuple[Document, float]]:
 
     if vectorstore is None:
-        vectorstore = get_vectorstore()
+        vectorstore = get_vector_store(get_embeddings())
 
     results = vectorstore.similarity_search_with_score(query, k=settings.retrieval_top_k)
     for doc, score in results:
@@ -57,18 +57,36 @@ def filter_by_score(results : List[tuple[Document,float]],threshold:float = None
 
     threshold = threshold or settings.similarity_threshold
 
-    filtered = [doc for doc, score in results if score >= threshold]
+    # If there are no scored results, return empty
+    if not results:
+        return []
+
+    scores = [score for _, score in results]
+
+    # Heuristic: decide whether scores are distances (lower is better) or similarities (higher is better)
+    # If scores are in [0,1] and many are small (<0.5), assume they are distances and lower is better.
+    in_unit_interval = all(0.0 <= s <= 1.0 for s in scores)
+    many_small = sum(1 for s in scores if s < 0.5) >= len(scores) / 2
+    is_distance = in_unit_interval and many_small
+
+    if is_distance:
+        # keep chunks with score <= threshold (distance below threshold)
+        filtered = [doc for doc, score in results if score <= threshold]
+    else:
+        # keep chunks with score >= threshold (similarity above threshold)
+        filtered = [doc for doc, score in results if score >= threshold]
+
     dropped = len(results) - len(filtered)
 
     if dropped:
-        logger.info(f"Filtered out {dropped} low-quality chunk(s) below threshold {threshold}")
+        logger.info(f"Filtered out {dropped} low-quality chunk(s) using threshold {threshold}")
 
     return filtered
 
 def get_retriever(mode : str = "mmr" , vectorstore: Chroma = None):
 
     if vectorstore is None:
-        vectorstore = get_vectorstore()
+        vectorstore = get_vector_store(get_embeddings())
 
     if mode == "mmr":
         return get_mmr_retriever(vectorstore)
