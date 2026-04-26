@@ -196,6 +196,66 @@ python "RAG CODE 4/run_end_to_end.py" --query "Compare BERT and GPT" --top-k 3
 
 ---
 
+## RAG CODE 5 — Corrective RAG (CRAG) with LangGraph
+
+`RAG CODE 5/` implements **Corrective RAG (CRAG)** — a self-correcting pipeline that evaluates retrieval quality before generating an answer and reroutes when documents are not relevant enough.
+
+### How it works
+
+```
+retrieve → grade_documents → [decision]
+                                 ├── All relevant      → generate → END
+                                 ├── Mixed relevance   → rewrite_query → retrieve (loop)
+                                 └── All irrelevant    → web_search → generate → END
+```
+
+1. **Retrieve** — fetches top-k chunks from ChromaDB using semantic similarity
+2. **Grade Documents** — LLM scores each retrieved document as relevant (`yes`) or not (`no`)
+3. **Decide** — conditional routing based on grading results
+4. **Rewrite Query** — rewrites the question for better vector retrieval, then loops back
+5. **Web Search** — Tavily fallback when local documents are insufficient
+6. **Generate** — final answer synthesised from the filtered context
+
+### Files
+
+| File | Role |
+|---|---|
+| `main.py` | Entry point — runs the CRAG graph |
+| `graph.py` | LangGraph workflow definition and conditional routing logic |
+| `nodes.py` | Node functions: retrieve, grade_documents, rewrite_query, web_search, generate |
+| `chains.py` | LLM chains: relevance grader, query rewriter, RAG generator |
+| `retriever.py` | ChromaDB loader — auto-indexes PDFs from `RAG CODE 4/papers` if collection is empty |
+| `state.py` | `GraphState` TypedDict shared across all nodes |
+| `papers/` | Source PDF documents |
+
+### Key design points
+
+- **Self-correcting loop** — if any retrieved document is irrelevant the query is rewritten and retrieval is retried; if all docs are irrelevant a Tavily web search is triggered instead.
+- **LangGraph state machine** — the corrective loop (rewrite → retrieve) is expressed as a cycle in the graph, not imperative code.
+- **Structured grading** — the relevance grader uses `pydantic` + `with_structured_output` for reliable `yes`/`no` scoring, not free-text parsing.
+- **Shared ChromaDB** — reuses the vector store built by RAG CODE 4; auto-builds it on first run if the collection is empty.
+- **Tavily web search** — extends the system beyond local documents when the knowledge base is insufficient.
+
+### Usage
+
+```bash
+# Requires Ollama running locally and a TAVILY_API_KEY in .env
+python "RAG CODE 5/main.py"
+```
+
+Models needed: `ollama pull llama3.2:1b` and `ollama pull nomic-embed-text`
+
+### How RAG CODE 5 improves on earlier phases
+
+| Concern | RAG CODE 1–4 | RAG CODE 5 (CRAG) |
+|---|---|---|
+| Bad retrieval | Silently passes to generation | Detected and corrected |
+| Query quality | Fixed input query | Rewritten automatically when retrieval is weak |
+| Knowledge gaps | Hallucination or no answer | Falls back to live Tavily web search |
+| Workflow | Linear pipeline | Stateful graph with conditional loops |
+
+---
+
 ## Repository overview
 
 | Folder | Phase | Core technique |
@@ -204,3 +264,4 @@ python "RAG CODE 4/run_end_to_end.py" --query "Compare BERT and GPT" --top-k 3
 | `RAG CODE 2/` | Production service | ChromaDB, FastAPI, MMR retrieval |
 | `RAG CODE 3/` | Vectorless RAG | LLM-navigated tree index, no embeddings |
 | `RAG CODE 4/` | Advanced retrieval | Semantic chunking, RRF, cross-encoder reranking |
+| `RAG CODE 5/` | Corrective RAG (CRAG) | LangGraph state machine, self-correcting retrieval, Tavily fallback |
